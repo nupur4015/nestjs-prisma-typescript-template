@@ -6,11 +6,12 @@ import { PrismaModule } from './modules/prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { HelmetMiddleware } from './middleware/helmet.middleware';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import config from './config.constants';
 import { JwtModule } from '@nestjs/jwt';
+import { RolesGuard } from './common/gaurds/roles.gaurd';
 
 const getConfigModule = () =>
   ConfigModule.forRoot({
@@ -18,7 +19,7 @@ const getConfigModule = () =>
     load: [config],
   });
 
-  const getJwtModule = () =>
+const getJwtModule = () =>
   JwtModule.registerAsync({
     global: true,
     inject: [ConfigService],
@@ -32,10 +33,16 @@ const getConfigModule = () =>
   imports: [PrismaModule, AuthModule, UsersModule, getConfigModule(), getJwtModule()
   ],
   controllers: [AppController],
-  providers: [AppService, PrismaService, {
-    provide: APP_FILTER,
-    useClass: AllExceptionsFilter,
-  }],
+  providers: [AppService,
+    PrismaService,
+    {
+      provide: APP_FILTER,
+      useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
